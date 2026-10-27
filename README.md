@@ -34,12 +34,9 @@ to the Vite app so it works on direct visits and page refreshes.
 
 ## Contact form email delivery
 
-- The form uses Formspree to deliver submissions to `ai.deptpolytech@gmail.com`;
-  no app backend is required.
-- Create a form at [formspree.io](https://formspree.io/), set its destination
-  to the inbox above, and verify that inbox with Formspree.
-- Add the form's endpoint (for example, `https://formspree.io/f/your-form-id`)
-  as `VITE_FORMSPREE_ENDPOINT` in the Vercel project's Environment Variables,
-  then redeploy. The same variable can be set in a local `.env.local` file.
-- Until the endpoint is configured, the form clearly prompts visitors to email
-  the address directly instead of claiming their message was sent.
+- The form sends submissions to the configured Formspree endpoint in
+  `src/siteConfig.ts`; no app backend or Vercel environment variable is needed.
+- In the Formspree dashboard, make sure the form delivers to
+  `ai.deptpolytech@gmail.com` and that the recipient inbox is verified.
+- Formspree's endpoint is public by design. Keep spam protection and recipient
+  settings managed through the Formspree dashboard.
