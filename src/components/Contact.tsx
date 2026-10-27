@@ -1,11 +1,118 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { services } from '../content';
 import { site } from '../siteConfig';
 import { Icon } from './Icon';
 import { LogoMark } from './LogoMark';
 
+const serviceOptions = [...services.map((service) => service.title), 'Not sure yet'];
+
+function ServiceSelect({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<HTMLDivElement[]>([]);
+  const selectedLabel = value.length === 0
+    ? 'Not sure yet'
+    : value.length === 1
+      ? value[0]
+      : `${value.length} services selected`;
+
+  useEffect(() => {
+    if (!open) return;
+    optionRefs.current[activeIndex]?.focus();
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!(event.target instanceof Node) || !wrapRef.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [activeIndex, open]);
+
+  function toggleOption(option: string) {
+    if (option === 'Not sure yet') {
+      onChange([]);
+      return;
+    }
+    onChange(value.includes(option) ? value.filter((service) => service !== option) : [...value, option]);
+  }
+
+  function handleTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex(value.length > 0 ? serviceOptions.indexOf(value[0]) : serviceOptions.length - 1);
+      setOpen(true);
+    } else if (event.key === 'Escape') {
+      setOpen(false);
+    }
+  }
+
+  function handleOptionKeyDown(event: ReactKeyboardEvent<HTMLDivElement>, index: number) {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      setActiveIndex((index + direction + serviceOptions.length) % serviceOptions.length);
+    } else if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      setActiveIndex(event.key === 'Home' ? 0 : serviceOptions.length - 1);
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleOption(serviceOptions[index]);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus();
+    } else if (event.key === 'Tab') {
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div ref={wrapRef} className={`select-wrap${open ? ' select-wrap--open' : ''}`}>
+      <input type="hidden" name="service" value={value.length > 0 ? value.join(', ') : 'Not sure yet'} />
+      <button
+        ref={triggerRef}
+        type="button"
+        className="select-trigger"
+        aria-label="Choose one or more services"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls="service-options"
+        onClick={() => {
+          setActiveIndex(value.length > 0 ? serviceOptions.indexOf(value[0]) : serviceOptions.length - 1);
+          setOpen((current) => !current);
+        }}
+        onKeyDown={handleTriggerKeyDown}
+      >
+        {selectedLabel}
+      </button>
+      {open && (
+        <div id="service-options" className="select-menu" role="listbox" aria-label="Services" aria-multiselectable="true">
+          {serviceOptions.map((option, index) => (
+            <div
+              key={option}
+              ref={(element) => {
+                if (element) optionRefs.current[index] = element;
+              }}
+              className={`select-option${(option === 'Not sure yet' ? value.length === 0 : value.includes(option)) ? ' select-option--selected' : ''}`}
+              tabIndex={activeIndex === index ? 0 : -1}
+              role="option"
+              aria-selected={option === 'Not sure yet' ? value.length === 0 : value.includes(option)}
+              onFocus={() => setActiveIndex(index)}
+              onClick={() => toggleOption(option)}
+              onKeyDown={(event) => handleOptionKeyDown(event, index)}
+            >
+              {option}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Contact() {
   const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'unconfigured'>('idle');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,6 +134,7 @@ export function Contact() {
       });
       if (!response.ok) throw new Error(`Formspree returned ${response.status}`);
       formElement.reset();
+      setSelectedServices([]);
       setFormStatus('sent');
     } catch (error) {
       console.error('Contact form submission failed:', error);
@@ -75,14 +183,7 @@ export function Contact() {
           </label>
           <label>
             What do you need?
-            <span className="select-wrap">
-              <select name="service" defaultValue="Not sure yet">
-                {services.map((service) => (
-                  <option key={service.title}>{service.title}</option>
-                ))}
-                <option>Not sure yet</option>
-              </select>
-            </span>
+            <ServiceSelect value={selectedServices} onChange={setSelectedServices} />
           </label>
           <label>
             Message
