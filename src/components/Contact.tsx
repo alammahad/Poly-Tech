@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { services } from '../content';
+import { homeLink } from '../routes';
 import { site } from '../siteConfig';
 import { Icon } from './Icon';
 import { LogoMark } from './LogoMark';
@@ -153,12 +154,6 @@ export function Contact() {
           <a href={`mailto:${site.contactEmail}`} className="button button--light">
             <Icon name="mail" size={18} /> {site.contactEmail}
           </a>
-          <ul className="contact__details">
-            <li>
-              <Icon name="pin" size={18} />
-              <span>{site.address}</span>
-            </li>
-          </ul>
           {site.bookingUrl && (
             <a href={site.bookingUrl} className="button button--light" target="_blank" rel="noreferrer">
               Pick a time on the calendar <Icon name="arrow" size={18} />
@@ -231,7 +226,7 @@ export function Footer() {
           <ul>
             {services.map((service) => (
               <li key={service.title}>
-                <a href="#services">{service.title}</a>
+                <a href={homeLink('#services')}>{service.title}</a>
               </li>
             ))}
           </ul>
@@ -242,7 +237,6 @@ export function Footer() {
             <li>
               <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a>
             </li>
-            <li>{site.address}</li>
           </ul>
         </div>
         <p className="footer__small">

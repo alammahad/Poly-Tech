@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { faqs, services, steps, team, testimonials } from '../content';
+import { faqs, projects, reportDestinations, reports, services, steps, testimonials } from '../content';
 import { site } from '../siteConfig';
 import { Icon } from './Icon';
 import { PersonScene, ServiceArt } from './Illustrations';
@@ -33,6 +33,188 @@ export function Services() {
             </li>
           ))}
         </ol>
+      </div>
+    </section>
+  );
+}
+
+// Homepage pointer to the /work page.
+export function WorkTeaser() {
+  return (
+    <section className="section section--tint" id="work">
+      <div className="container work-teaser">
+        <div className="work-teaser__copy reveal">
+          <h2 data-parallax style={depth(28)}>Our work</h2>
+          <p>
+            Lead discovery, outbound and inbound AI calling agents, email automations, chatbots, spam filtering and
+            the daily reports behind all of them. See how each one works, step by step, on our work page.
+          </p>
+          <a href="/work" className="button button--primary">
+            See our work <Icon name="arrow" size={18} />
+          </a>
+        </div>
+        <ul className="work-teaser__list reveal reveal--scale">
+          {projects.map((project) => (
+            <li key={project.id}>
+              <a href={`/work#${project.id}`}>
+                <span className="work-teaser__icon">
+                  <Icon name={project.icon} size={18} />
+                </span>
+                <span className="work-teaser__category">{project.category}</span>
+                {project.title}
+                <Icon name="arrow" size={16} />
+              </a>
+            </li>
+          ))}
+          <li>
+            <a href="/work#reporting">
+              <span className="work-teaser__icon">
+                <Icon name="chart" size={18} />
+              </span>
+              <span className="work-teaser__category">Reporting</span>
+              Reporting automations
+              <Icon name="arrow" size={16} />
+            </a>
+          </li>
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+// Heading at the top of the /work page.
+export function WorkIntro() {
+  return (
+    <section className="work-intro" id="top">
+      <div className="work-intro__glow" aria-hidden="true" />
+      <div className="container">
+        <a href="/" className="work-intro__back">
+          &larr; Back to home
+        </a>
+        <span className="work-intro__eyebrow">Our work</span>
+        <h1>
+          Automations that run the busywork, <em>and report back every morning.</em>
+        </h1>
+        <p>
+          Lead discovery, AI calling, email, chat and reporting, built and running for real businesses. Here&apos;s how
+          each one works and what it tracks.
+        </p>
+        <nav className="work-intro__jump" aria-label="On this page">
+          {projects.map((project) => (
+            <a key={project.id} href={`#${project.id}`}>
+              <Icon name={project.icon} size={15} />
+              {project.title}
+            </a>
+          ))}
+          <a href="#reporting">
+            <Icon name="chart" size={15} />
+            Reporting
+          </a>
+        </nav>
+      </div>
+    </section>
+  );
+}
+
+export function Projects() {
+  return (
+    <section className="section" id="projects">
+      <div className="container">
+        <div className="section-heading reveal">
+          <h2 data-parallax style={depth(28)}>Automation projects</h2>
+          <p>Each one runs on its own and comes with its own report, so you always know what it did.</p>
+        </div>
+        <div className="projects projects--two">
+          {projects.map((project, index) => (
+            <article key={project.id} id={project.id} className="project reveal" style={stagger(index % 2)}>
+              <div className="project__head">
+                <span className="project__icon">
+                  <Icon name={project.icon} size={24} />
+                </span>
+                <span className="project__category">{project.category}</span>
+                <span className="project__index" aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+              </div>
+              <h3>{project.title}</h3>
+              <p>{project.text}</p>
+              <ol className="project__flow" aria-label="How it works">
+                {project.flow.map((stage, step) => (
+                  <li key={stage}>
+                    <b>{step + 1}</b>
+                    {stage}
+                  </li>
+                ))}
+              </ol>
+              <div className="project__report">
+                <span>In the report</span>
+                <ul>
+                  {project.report.map((line) => (
+                    <li key={line}>
+                      <Icon name="check" size={15} />
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <p className="project__result">
+                <Icon name="sparkle" size={18} />
+                {project.result}
+              </p>
+              <ul className="project__services" aria-label="Services involved">
+                {project.services.map((service) => (
+                  <li key={service}>{service}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Bar heights for the little decorative chart on each report card.
+const reportBars = [38, 54, 46, 70, 58, 82, 66, 90, 74];
+
+export function Reporting() {
+  return (
+    <section className="section section--tint" id="reporting">
+      <div className="container">
+        <div className="section-heading reveal">
+          <h2 data-parallax style={depth(28)}>Reporting automations</h2>
+          <p>
+            Reports that put themselves together. Your numbers are collected automatically and waiting for you every
+            morning, so nobody has to copy figures between tabs again.
+          </p>
+        </div>
+        <div className="projects projects--four">
+          {reports.map((report, index) => (
+            <article key={report.title} className="project report-card reveal" style={stagger(index % 4)}>
+              <span className="project__icon">
+                <Icon name={report.icon} size={22} />
+              </span>
+              <h3>{report.title}</h3>
+              <p>{report.text}</p>
+              <div className="report-card__bars" aria-hidden="true">
+                {reportBars.map((_, bar) => (
+                  <span key={bar} style={{ height: `${reportBars[(bar + index * 2) % reportBars.length]}%` }} />
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="report-delivery reveal">
+          <span>Delivered to</span>
+          <ul>
+            {reportDestinations.map((destination) => (
+              <li key={destination.label}>
+                <Icon name={destination.icon} size={16} />
+                {destination.label}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
   );
@@ -83,71 +265,6 @@ export function About() {
           <a href={`mailto:${site.contactEmail}`} className="button button--primary">
             Write to us <Icon name="arrow" size={18} />
           </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function Team() {
-  const [lead, ...members] = team;
-  return (
-    <section className="section team-page" id="team">
-      <div className="container">
-        <div className="team-intro reveal">
-          <span className="team-intro__eyebrow">Poly Tech <span>/</span> Our team</span>
-          <h1>The people behind the work.</h1>
-          <p>Small team. Hands-on work. Direct access to the people building your systems.</p>
-        </div>
-        {lead && (
-          <article className="team-lead reveal">
-            {lead.photo && (
-              <div className="team-lead__portrait">
-                <img className="team-lead__photo" src={lead.photo} alt={`Portrait of ${lead.name}`} />
-                <span className="team-lead__portrait-caption">Poly Tech leadership</span>
-              </div>
-            )}
-            <div className="team-lead__content">
-              <span className="team-lead__label"><span>01</span> Team lead</span>
-              <h3>{lead.name}</h3>
-              <p className="team-lead__role">{lead.role}</p>
-              <div className="team-lead__links">
-                <a href={`mailto:${lead.email}`} className="team-card__link">
-                  <Icon name="mail" size={18} />
-                  {lead.email}
-                </a>
-                <a href={lead.linkedin} className="team-linkedin" target="_blank" rel="noreferrer">
-                  LinkedIn <Icon name="arrow" size={18} />
-                </a>
-              </div>
-            </div>
-          </article>
-        )}
-        <div className="team-roster-heading reveal">
-          <span>Meet the team</span>
-          <p>Specialists who turn ideas into useful systems.</p>
-        </div>
-        <div className="team-grid">
-          {members.map((member, index) => (
-            <article key={member.name} className="team-card reveal" style={stagger(index)}>
-              <div className="team-card__person">
-                <span className="team-card__initial" aria-hidden="true">
-                  {member.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}
-                </span>
-                <span className="team-card__role">{member.role ?? 'Poly Tech team'}</span>
-              </div>
-              <h3>{member.name}</h3>
-              <div className="team-card__links">
-                <a href={`mailto:${member.email}`} className="team-card__link" aria-label={`Email ${member.name}`}>
-                  <Icon name="mail" size={18} />
-                  Email
-                </a>
-                <a href={member.linkedin} className="team-linkedin" target="_blank" rel="noreferrer">
-                  LinkedIn <Icon name="arrow" size={18} />
-                </a>
-              </div>
-            </article>
-          ))}
         </div>
       </div>
     </section>

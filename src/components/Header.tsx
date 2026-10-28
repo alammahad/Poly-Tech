@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { navLinks } from '../content';
+import { homeLink, isWorkPage } from '../routes';
 import { Icon } from './Icon';
 import { LogoMark } from './LogoMark';
 
 export function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const onTeamPage = window.location.pathname === '/team';
 
   useEffect(() => {
     // Also feeds the progress bar and the hero parallax through CSS variables, once per frame.
@@ -34,7 +34,7 @@ export function Header() {
   return (
     <header className={`header${scrolled ? ' header--scrolled' : ''}`}>
       <div className="container header__inner">
-        <a href={onTeamPage ? '/' : '#top'} className="header__brand" aria-label="Poly Tech home">
+        <a href={isWorkPage ? '/' : '#top'} className="header__brand" aria-label="Poly Tech home">
           <LogoMark compact className="header__mark" />
           <span className="brand-word">Poly Tech</span>
         </a>
@@ -42,14 +42,14 @@ export function Header() {
           {navLinks.map((link) => (
             <a
               key={link.href}
-              href={onTeamPage && link.href.startsWith('#') ? `/${link.href}` : link.href}
+              href={homeLink(link.href)}
               onClick={() => setOpen(false)}
             >
               {link.label}
             </a>
           ))}
           <a
-            href={onTeamPage ? '/#contact' : '#contact'}
+            href="#contact"
             className="button button--primary nav__cta"
             onClick={() => setOpen(false)}
           >

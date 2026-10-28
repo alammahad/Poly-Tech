@@ -2,14 +2,23 @@ import { useEffect } from 'react';
 import { Contact, Footer } from './components/Contact';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
-import { About, Customers, Faq, Process, Services, Team } from './components/Sections';
+import {
+  About,
+  Customers,
+  Faq,
+  Process,
+  Projects,
+  Reporting,
+  Services,
+  WorkIntro,
+  WorkTeaser,
+} from './components/Sections';
+import { isWorkPage } from './routes';
 
 export default function App() {
-  const isTeamPage = window.location.pathname === '/team';
-
   useEffect(() => {
-    if (isTeamPage) document.title = 'Our Team | Poly Tech';
-  }, [isTeamPage]);
+    if (isWorkPage) document.title = 'Our Work | Poly Tech';
+  }, []);
 
   // Fade sections in as they scroll into view.
   useEffect(() => {
@@ -64,12 +73,18 @@ export default function App() {
     <>
       <Header />
       <main>
-        {isTeamPage ? (
-          <Team />
+        {isWorkPage ? (
+          <>
+            <WorkIntro />
+            <Projects />
+            <Reporting />
+            <Contact />
+          </>
         ) : (
           <>
             <Hero />
             <Services />
+            <WorkTeaser />
             <Process />
             <About />
             <Faq />

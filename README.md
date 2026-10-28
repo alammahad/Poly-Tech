@@ -19,8 +19,9 @@ Vite framework preset, `npm run build` as the build command, and `dist` as the
 output directory. Push the site files to the connected GitHub repository to
 trigger a deployment.
 
-The team profiles are available at `/team`; `vercel.json` rewrites that route
-to the Vite app so it works on direct visits and page refreshes.
+The project showcase is at `/work`; `vercel.json` rewrites that route to the
+Vite app so it works on direct visits and page refreshes. The old `/team` URL
+redirects to the homepage.
 
 ## Editing
 
