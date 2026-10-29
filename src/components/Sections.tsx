@@ -1,8 +1,20 @@
-import { useState, type CSSProperties } from 'react';
-import { faqs, projects, reportDestinations, reports, services, steps, testimonials } from '../content';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import {
+  faqs,
+  projectGroups,
+  projects,
+  reportDestinations,
+  reports,
+  services,
+  steps,
+  testimonials,
+  workStats,
+  type Project,
+} from '../content';
 import { site } from '../siteConfig';
 import { Icon } from './Icon';
 import { PersonScene, ServiceArt } from './Illustrations';
+import { ClientBadge, ProjectModal } from './ProjectModal';
 
 // Delays each item's reveal a little more than the one before it.
 const stagger = (index: number) => ({ '--i': index }) as CSSProperties;
@@ -38,6 +50,43 @@ export function Services() {
   );
 }
 
+// Numbers skip the count-up when motion is turned off.
+const staticNumbers = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window);
+
+// A number that counts up from zero the first time it scrolls into view.
+function CountUp({ value }: { value: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [shown, setShown] = useState(() => (staticNumbers() ? value : 0));
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || staticNumbers()) return;
+    let frame = 0;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        const start = performance.now();
+        const tick = (now: number) => {
+          const progress = Math.min(1, (now - start) / 1600);
+          setShown(Math.round(value * (1 - Math.pow(1 - progress, 3))));
+          if (progress < 1) frame = requestAnimationFrame(tick);
+        };
+        frame = requestAnimationFrame(tick);
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [value]);
+
+  return <span ref={ref}>{shown}</span>;
+}
+
 // Homepage pointer to the /work page.
 export function WorkTeaser() {
   return (
@@ -46,7 +95,8 @@ export function WorkTeaser() {
         <div className="work-teaser__copy reveal">
           <h2 data-parallax style={depth(28)}>Our work</h2>
           <p>
-            Lead discovery, outbound and inbound AI calling agents, email automations, chatbots, spam filtering and
+            {projects.length} projects we&apos;ve built for our customers: lead discovery, AI calling agents,
+            appointment reminders, review requests, replies across every messaging app, document AI, dashboards and
             the daily reports behind all of them. See how each one works, step by step, on our work page.
           </p>
           <a href="/work" className="button button--primary">
@@ -54,18 +104,23 @@ export function WorkTeaser() {
           </a>
         </div>
         <ul className="work-teaser__list reveal reveal--scale">
-          {projects.map((project) => (
-            <li key={project.id}>
-              <a href={`/work#${project.id}`}>
-                <span className="work-teaser__icon">
-                  <Icon name={project.icon} size={18} />
-                </span>
-                <span className="work-teaser__category">{project.category}</span>
-                {project.title}
-                <Icon name="arrow" size={16} />
-              </a>
-            </li>
-          ))}
+          {projectGroups.map((group) => {
+            const count = projects.filter((project) => project.group === group.id).length;
+            return (
+              <li key={group.id}>
+                <a href={`/work#${group.id}`}>
+                  <span className="work-teaser__icon">
+                    <Icon name={group.icon} size={18} />
+                  </span>
+                  <span className="work-teaser__category">
+                    {count} {count === 1 ? 'project' : 'projects'}
+                  </span>
+                  {group.title}
+                  <Icon name="arrow" size={16} />
+                </a>
+              </li>
+            );
+          })}
           <li>
             <a href="/work#reporting">
               <span className="work-teaser__icon">
@@ -77,6 +132,19 @@ export function WorkTeaser() {
             </a>
           </li>
         </ul>
+        <dl className="work-stats">
+          {workStats.map((stat, index) => (
+            <div key={stat.label} className="work-stats__item reveal" style={stagger(index)}>
+              <dt>{stat.label}</dt>
+              <dd aria-label={`${stat.value}${stat.suffix ?? ''}`}>
+                <span aria-hidden="true">
+                  <CountUp value={stat.value} />
+                  {stat.suffix}
+                </span>
+              </dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </section>
   );
@@ -96,14 +164,15 @@ export function WorkIntro() {
           Automations that run the busywork, <em>and report back every morning.</em>
         </h1>
         <p>
-          Lead discovery, AI calling, email, chat and reporting, built and running for real businesses. Here&apos;s how
-          each one works and what it tracks.
+          Every project on this page was built by us for a real customer: leads, AI calling, client messaging,
+          documents, dashboards and reporting. Here&apos;s the problem each customer had, how we solved it and what it
+          tracks. Client names are left out to protect their privacy.
         </p>
         <nav className="work-intro__jump" aria-label="On this page">
-          {projects.map((project) => (
-            <a key={project.id} href={`#${project.id}`}>
-              <Icon name={project.icon} size={15} />
-              {project.title}
+          {projectGroups.map((group) => (
+            <a key={group.id} href={`#${group.id}`}>
+              <Icon name={group.icon} size={15} />
+              {group.title}
             </a>
           ))}
           <a href="#reporting">
@@ -116,60 +185,155 @@ export function WorkIntro() {
   );
 }
 
+// Order of an item inside a card, so its details can arrive one after another.
+const order = (index: number) => ({ '--s': index }) as CSSProperties;
+
+// Moves the soft glow on a project card to follow the cursor.
+const followCursor = (event: MouseEvent<HTMLElement>) => {
+  const box = event.currentTarget.getBoundingClientRect();
+  event.currentTarget.style.setProperty('--mx', `${event.clientX - box.left}px`);
+  event.currentTarget.style.setProperty('--my', `${event.clientY - box.top}px`);
+};
+
+function ProjectCard({ project, index, onOpen }: { project: Project; index: number; onOpen: () => void }) {
+  return (
+    // The whole card opens the popup for mouse and touch; keyboard users get the button at the bottom.
+    <article
+      id={project.id}
+      className="project project--live project--clickable reveal"
+      style={stagger(index % 2)}
+      onMouseMove={followCursor}
+      onClick={onOpen}
+    >
+      <div className="project__head">
+        <span className="project__icon">
+          <Icon name={project.icon} size={24} />
+        </span>
+        <span className="project__category">{project.category}</span>
+        <span className="project__index" aria-hidden="true">
+          {String(projects.indexOf(project) + 1).padStart(2, '0')}
+        </span>
+      </div>
+      <h4>{project.title}</h4>
+      <ClientBadge project={project} />
+      <p>{project.text}</p>
+      {project.problem && (
+        <div className="project__problem">
+          <span>The problem</span>
+          <ul>
+            {project.problem.map((line, item) => (
+              <li key={line} style={order(item)}>
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <ol className="project__flow" aria-label="How it works">
+        {project.flow.map((stage, step) => (
+          <li key={stage} style={order(step)}>
+            <b>{step + 1}</b>
+            {stage}
+          </li>
+        ))}
+      </ol>
+      {project.screenshot && (
+        <figure className="project__shot">
+          <span className="project__shot-bar" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            The workflow we built for the client
+          </span>
+          <img src={project.screenshot.src} alt={project.screenshot.alt} loading="lazy" />
+        </figure>
+      )}
+      {project.report && (
+        <div className="project__report">
+          <span>In the report</span>
+          <ul>
+            {project.report.map((line, item) => (
+              <li key={line} style={order(item)}>
+                <Icon name="check" size={15} />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <p className="project__result">
+        <Icon name="sparkle" size={18} />
+        {project.result}
+      </p>
+      <ul className="project__services" aria-label="Services and tools involved">
+        {[...project.services, ...(project.tools ?? [])].map((tag, item) => (
+          <li
+            key={tag}
+            className={item >= project.services.length ? 'project__tool' : undefined}
+            style={order(item)}
+          >
+            {tag}
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="project__open" onClick={onOpen}>
+        See it run
+        <span className="project__open-arrow">
+          <Icon name="arrow" size={16} />
+        </span>
+      </button>
+    </article>
+  );
+}
+
 export function Projects() {
+  const [openId, setOpenId] = useState<string | null>(null);
+
   return (
     <section className="section" id="projects">
       <div className="container">
         <div className="section-heading reveal">
           <h2 data-parallax style={depth(28)}>Automation projects</h2>
-          <p>Each one runs on its own and comes with its own report, so you always know what it did.</p>
+          <p>
+            Each one was built for a customer of ours and grouped by the kind of work it takes off their plate. They
+            run on their own, and most come with their own report, so the customer always knows what it did.
+          </p>
         </div>
-        <div className="projects projects--two">
-          {projects.map((project, index) => (
-            <article key={project.id} id={project.id} className="project reveal" style={stagger(index % 2)}>
-              <div className="project__head">
-                <span className="project__icon">
-                  <Icon name={project.icon} size={24} />
+        {projectGroups.map((group, groupIndex) => (
+          <div key={group.id} id={group.id} className="project-group">
+            <div className="project-group__head reveal">
+              <span className="project__icon">
+                <Icon name={group.icon} size={22} />
+              </span>
+              <div>
+                <span className="project-group__count">
+                  {String(groupIndex + 1).padStart(2, '0')} &middot;{' '}
+                  {projects.filter((project) => project.group === group.id).length} projects
                 </span>
-                <span className="project__category">{project.category}</span>
-                <span className="project__index" aria-hidden="true">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
+                <h3>{group.title}</h3>
+                <p>{group.text}</p>
               </div>
-              <h3>{project.title}</h3>
-              <p>{project.text}</p>
-              <ol className="project__flow" aria-label="How it works">
-                {project.flow.map((stage, step) => (
-                  <li key={stage}>
-                    <b>{step + 1}</b>
-                    {stage}
-                  </li>
+            </div>
+            <div className="projects projects--two">
+              {projects
+                .filter((project) => project.group === group.id)
+                .map((project, index) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    index={index}
+                    onOpen={() => setOpenId(project.id)}
+                  />
                 ))}
-              </ol>
-              <div className="project__report">
-                <span>In the report</span>
-                <ul>
-                  {project.report.map((line) => (
-                    <li key={line}>
-                      <Icon name="check" size={15} />
-                      {line}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <p className="project__result">
-                <Icon name="sparkle" size={18} />
-                {project.result}
-              </p>
-              <ul className="project__services" aria-label="Services involved">
-                {project.services.map((service) => (
-                  <li key={service}>{service}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
-        </div>
+            </div>
+          </div>
+        ))}
       </div>
+      <ProjectModal
+        project={projects.find((project) => project.id === openId)}
+        onClose={() => setOpenId(null)}
+        onNavigate={setOpenId}
+      />
     </section>
   );
 }
